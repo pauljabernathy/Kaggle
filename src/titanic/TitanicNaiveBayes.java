@@ -19,6 +19,8 @@ import learning.stats.ProbDist;
 
 import learning.util.Utilities;
 
+import org.apache.log4j.*;
+
 /**
  *
  * @author paul
@@ -37,6 +39,7 @@ public class TitanicNaiveBayes implements TitanicStrategy {
     //public static final int SURVIVED_COLUMN = 1;
     
     private ProbDist<Classification> probDist;
+    private Logger logger;
     
     public static void main(String[] args) {
         TitanicNaiveBayes titanic = new TitanicNaiveBayes();
@@ -51,6 +54,9 @@ public class TitanicNaiveBayes implements TitanicStrategy {
     
     public TitanicNaiveBayes() {
         this.probDist = new TitanicDistData().getClassificationDist();
+        logger = Logger.getLogger(this.getClass());
+        logger.addAppender(new ConsoleAppender(new PatternLayout(Constants.DEFAULT_LOGGING_PATTERN)));
+        logger.setLevel(Level.DEBUG);
     }
     
     public void runTrain(String inputFile, String outputFile) {
@@ -59,26 +65,19 @@ public class TitanicNaiveBayes implements TitanicStrategy {
         //for(int[] a : permutations) {
         for(int i = 0; i < permutations.size(); i++) {
             int[] a = permutations.get(i);
-            //if(a.length < 2) continue;
             //Utilities.showArray(a);
             results.add(doOneTrainingRun(inputFile, outputFile, a));
         }
-        //doOneTrainingRun(inputFile, outputFile, TRAIN_INDECES);
-        //doOneTrainingRun(inputFile, outputFile, new int[]{  9, 13, 14  });
-        //doOneTrainingRun(inputFile, outputFile, new int[]{  3, 6  });
-        /*for(Result result : results) {
-            System.out.println(result);
-        }*/
+
         Collections.sort(results, new ResultComparator());
         //for(Result result : results) {
         for(int i = results.size() - 1; i >= 0; i--) {
-            //System.out.println(result);
-            System.out.println(results.get(i));
+            logger.debug(results.get(i));
         }
     }
     
     private Result doOneTrainingRun(String inputFile, String outputFile, int[] indeces) {
-        //System.out.println("\ndoOneTrainingRun(" + inputFile + ", " + outputFile + ", " + Utilities.arrayToString(indeces));
+        //logger.debug("\ndoOneTrainingRun(" + inputFile + ", " + outputFile + ", " + Utilities.arrayToString(indeces));
         List<List> data = (List<List>)Titanic.loadData(inputFile, indeces, Titanic.COLUMN_SEPARATOR);
         List<String> correct = Titanic.loadCorrectClassifications(inputFile, Constants.SURVIVED_COLUMN, Titanic.COLUMN_SEPARATOR);
         
@@ -94,7 +93,7 @@ public class TitanicNaiveBayes implements TitanicStrategy {
         List<String> result = classifier.classify(data);
         int numCorrect = Titanic.compare(correct, result);
         double percent = (double)numCorrect / (double)data.size() * 100;
-        //System.out.println("out of " + data.size() + " " + numCorrect + " or " +  percent + "% were correct ");
+        //logger.debug("out of " + data.size() + " " + numCorrect + " or " +  percent + "% were correct ");
         try {
             Titanic.writeToFile(result, outputFile, 1);
         } catch(IOException e) {
