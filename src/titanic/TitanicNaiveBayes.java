@@ -36,7 +36,6 @@ public class TitanicNaiveBayes implements TitanicStrategy {
     //public static final int[] TRAIN_INDECES = /**/{ 3, 6, 8, 9, 13, 14 };///**/ new int[]{  3, 6  };
     public static final int[] TRAIN_INDECES = /**/{ 2, 5, 7, 8, 12, 13 };
     public static final int[] TEST_INDECES = /**new int[]{ 1, 3, 11 };///**/new int[]{ 2, 5};//, 7, 12, 13 };
-    //public static final int SURVIVED_COLUMN = 1;
     
     private ProbDist<Classification> probDist;
     private Logger logger;
@@ -44,7 +43,7 @@ public class TitanicNaiveBayes implements TitanicStrategy {
     public static void main(String[] args) {
         TitanicNaiveBayes titanic = new TitanicNaiveBayes();
         titanic.runTrain("data/titanic.csv", "train_results.csv");
-        //titanic.runTest("data/titanic_test.csv", "test_results_20140124.csv", new int[]{ 5, 7, 8, 12, 13 }, Constants.TRAINING_FILE, new int[]{ 5, 7, 8, 12, 13 });
+        //titanic.runTest("data/titanic_test.csv", "test_results_20140125.csv", new int[]{ 5, 7, 8, 12, 13 }, Constants.TRAINING_FILE, new int[]{ 5, 7, 8, 12, 13 });
         //titanic.runTest("titanic_test.csv", "test_results_20131110_2.csv", new int[]{ 5, 7, 8, 13 });
         //titanic.runTest("titanic_test.csv", "test_results_20131110_3.csv", new int[]{ 2, 5, 7 });
         //titanic.runTest("titanic_test.csv", "test_results_20131110_4.csv", new int[]{ 2, 5, 7, 8, 12 });
@@ -129,10 +128,13 @@ public class TitanicNaiveBayes implements TitanicStrategy {
         }
     }
     
-    private List<String> checkForUnknowns(List<String> list) {
+    protected List<String> checkForUnknowns(List<String> list) {
         List<String> result = new ArrayList<String>();
+        if(list == null) {
+            return result;
+        }
         for(String s : list) {
-            if(s.equals("unknown")) {
+            if(s.equals(Constants.UNKNOWN)) {
                 result.add("0");
             } else {
                 result.add(s);

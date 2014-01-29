@@ -7,8 +7,6 @@ package titanic;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-import static learning.titanic.Titanic.loadCorrectClassifications;
-import static learning.titanic.Titanic.loadData;
 
 /**
  *
@@ -27,8 +25,8 @@ public class TitanicTree implements TitanicStrategy {
         tt.runTest("titanic_test.csv", "tree_test.csv");
     }
     public void runTrain(String inputFile, String outputFile) {
-        List<List> data = (List<List>)loadData(inputFile, new int[]{ TRAIN_CLASS_INDEX, TRAIN_GENDER_INDEX, TRAIN_ISCHILD_INDEX }, Titanic.COLUMN_SEPARATOR);
-        List<String> correct = loadCorrectClassifications(inputFile, TRAIN_SURVIVED_INDEX, Titanic.COLUMN_SEPARATOR);
+        List<List> data = (List<List>)Titanic.loadData(inputFile, new int[]{ TRAIN_CLASS_INDEX, TRAIN_GENDER_INDEX, TRAIN_ISCHILD_INDEX }, Titanic.COLUMN_SEPARATOR);
+        List<String> correct = Titanic.loadCorrectClassifications(inputFile, TRAIN_SURVIVED_INDEX, Titanic.COLUMN_SEPARATOR);
         
         List<String> results = classify(data);
         
@@ -44,7 +42,7 @@ public class TitanicTree implements TitanicStrategy {
     }
     
     public void runTest(String inputFile, String outputFile) {
-         List<List> data = (List<List>)loadData(inputFile, new int[]{ TRAIN_CLASS_INDEX - 1, TRAIN_GENDER_INDEX - 1, TRAIN_ISCHILD_INDEX - 1}, Titanic.COLUMN_SEPARATOR);
+         List<List> data = (List<List>)Titanic.loadData(inputFile, new int[]{ TRAIN_CLASS_INDEX - 1, TRAIN_GENDER_INDEX - 1, TRAIN_ISCHILD_INDEX - 1}, Titanic.COLUMN_SEPARATOR);
           List<String> results = classify(data);
         try {
             Titanic.writeToFile(results, outputFile, 1);
