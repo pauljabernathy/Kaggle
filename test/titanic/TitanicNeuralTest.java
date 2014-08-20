@@ -234,68 +234,6 @@ public class TitanicNeuralTest {
         assertEquals(1, network[3].length);
     }
     
-    @Test
-    public void testInitializeInputs() {
-        logger.info("\ntesting initializeInputs()");
-        TitanicNeural instance = new TitanicNeural();
-        Neuron[][] network = instance.getSensorsAndFirstLayer();
-        
-        
-        assertEquals(network, instance.initializeInputs(null, network));
-        network = instance.initializeInputs(null, null);
-        if(network == null) {
-            fail("output network was null");
-        }
-        assertEquals(0, network.length);
-        
-        network = new Neuron[0][];
-        network = instance.initializeInputs(null, network);
-        assertEquals(0, network.length);
-        
-        try {
-            List<List<String>> rows = CSVReader.getRowsAsLists("titanic.csv", new int[] { 1, 2, 5, 6, 7, 8, 10, 12, 13 }, 900);
-            network = instance.initializeInputs(rows.get(0), null);
-            if(network == null) {
-                fail("outpt nework was null");
-            }
-            assertEquals(0, network.length);
-            
-            network = new Neuron[0][];
-            network = instance.initializeInputs(null, network);
-            assertEquals(0, network.length);
-            
-            //now with both inputs being good
-            network = instance.getSensorsAndFirstLayer();        
-            assertEquals(2, network.length);
-            for(Neuron[] outer : network) {
-                for(Neuron n : outer) {
-                    //logger.debug(n.getCachedOutput());
-                    n.calculateOutput();
-                    assertEquals(Neuron.INACTIVE, n.getCachedOutput(), 0.0);
-                }
-            }
-            network = instance.initializeInputs(rows.get(0), network);
-            for(int i = 0; i < network[0].length; i++) {
-                logger.debug(network[0][i].getCachedOutput() + "\t" + network[1][i].getCachedOutput());
-            }
-            assertEquals(Neuron.INACTIVE, network[1][0].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][1].getCachedOutput(), 0.0);
-            assertEquals(Neuron.ACTIVE, network[1][2].getCachedOutput(), 0.0);
-            assertEquals(Neuron.ACTIVE, network[1][3].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][4].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][5].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][6].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][7].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][8].getCachedOutput(), 0.0);
-            assertEquals(Neuron.ACTIVE, network[1][9].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][10].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][11].getCachedOutput(), 0.0);
-            assertEquals(Neuron.INACTIVE, network[1][12].getCachedOutput(), 0.0);
-            assertEquals(Neuron.ACTIVE, network[1][13].getCachedOutput(), 0.0);
-        } catch(IOException e) {
-            fail("IOException trying to parse the input file:  " + e.getMessage());
-        }
-    }
     
     @Test
     public void testResetNetwork() {

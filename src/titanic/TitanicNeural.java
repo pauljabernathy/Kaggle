@@ -431,6 +431,7 @@ public class TitanicNeural {
         network[3][0] = output;
         return network;
     }
+  
     //TODO:  input a list of variables and have this determine how many need to be created for each variable
     public Neuron[][] getSensorsAndFirstLayer() {
         Neuron firstClassSensor = new Neuron();
@@ -513,78 +514,6 @@ public class TitanicNeural {
         Neuron[][] network = new Neuron[2][13];
         network[0] = sensors;
         network[1] = firstLayer;
-        return network;
-    }
-    
-    public Neuron[][] initializeInputs(List<String> row, Neuron[][] network) throws NumberFormatException {
-        if(network == null) {
-            return new Neuron[0][];
-        } else if(row == null) {
-            network = resetNetwork(network);
-            return network;
-        }
-        
-        int survived;
-        int pclass;
-        String sex;
-        int age;
-        int sibsp;
-        int parch;
-        double fare;
-        String port;
-        boolean isChild;
-        
-        survived = Integer.parseInt(row.get(0));
-        pclass = Integer.parseInt(row.get(1));
-        sex = row.get(2);
-        age = Integer.parseInt(row.get(3));
-        sibsp = Integer.parseInt(row.get(4));
-        parch = Integer.parseInt(row.get(5));
-        fare = Double.parseDouble(row.get(6));
-        port = row.get(7);
-        isChild = Boolean.parseBoolean(row.get(8));
-        String sep = "\t";
-        logger.debug(pclass + sep + sep + sep + sex + sep + sep + age + sep + sibsp + sep + parch + sep + fare + sep + port + sep + sep + sep + isChild + sep + sep + " -> " + survived);
-
-        switch(pclass) {
-            case 1:
-                network[0][0].setOutput(Neuron.ACTIVE);
-                break;
-            case 2:
-                network[0][1].setOutput(Neuron.ACTIVE);
-                break;
-            case 3:
-                network[0][2].setOutput(Neuron.ACTIVE);
-                break;
-        }
-        if("male".equals(sex)) {
-            network[0][3].setOutput(Neuron.ACTIVE);
-        } else if("female".equals(sex)) {
-            network[0][4].setOutput(Neuron.ACTIVE);
-        }
-        network[0][5].setOutput((double)age / 100.0);
-        network[0][6].setOutput((double)sibsp / 10.0);
-        network[0][7].setOutput((double)parch / 10.0);
-        network[0][8].setOutput(fare / 200.0);
-        if("S".equals(port)) {
-            network[0][9].setOutput(Neuron.ACTIVE);
-        } else if("Q".equals(port)) {
-            network[0][10].setOutput(Neuron.ACTIVE);
-        } else if("C".equals(port)) {
-            network[0][11].setOutput(Neuron.ACTIVE);
-        }
-        if(isChild) {
-            network[0][12].setOutput(Neuron.ACTIVE);
-        } else {
-            network[0][13].setOutput(Neuron.ACTIVE);
-        }
-        
-        for(int j = 1; j < network.length; j++) {
-            for(int k = 0; k < network[j].length; k++) {
-                network[j][k].calculateOutput();
-            }
-        }
-        
         return network;
     }
     
