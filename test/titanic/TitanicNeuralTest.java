@@ -26,6 +26,7 @@ import learning.neural.Neuron;
 public class TitanicNeuralTest {
     
     private static Logger logger;
+    private static final int TRAIN_FILE_LENGTH = 891;
     
     public TitanicNeuralTest() {
     }
@@ -124,6 +125,64 @@ public class TitanicNeuralTest {
         } catch(IOException e) {
             logger.error(e.getClass() + " " + e.getMessage());
         }
+    }
+    
+    @Test
+    public void testGetSurvived() {
+        logger.info("\ntesting getSurvived()");
+        TitanicNeural instance = new TitanicNeural();
+        int[] result = null;
+        
+        /*try {
+            instance.getSurvived(null);
+            fail("should have thrown IOException for instance.getSurvived(null, 1)");
+        } catch(IOException e) {
+            logger.debug("correctly threw the IOException for instance.getSurvived(null, 1)");
+        }
+        
+        try {
+            instance.getSurvived("");
+            fail("should have thrown IOException for instance.getSurvived(\"\", 1)");
+        } catch(IOException e) {
+            logger.debug("correctly threw the IOException for instance.getSurvived(\"\", 1)");
+        }
+        
+        try {
+            instance.getSurvived("filethatdoesnotexist");
+            fail("should have thrown IOException for instance.getSurvived(\"filethatdoesnotexist\", 1)");
+        } catch(IOException e) {
+            logger.debug("correctly threw the IOException for instance.getSurvived(\"filethatdoesnotexist\", 1)");
+        }
+        */
+        try {
+            /**toolbox.stats.DataList dl = CSVReader.getSingleColumn(TitanicNeural.TITANIC_FILE_NAME, TitanicNeural.SURVIVED_INDEX, TitanicNeural.COLUMN_SEPARATOR);
+            logger.debug(dl.size());
+            for(int i = 0; i < dl.size(); i++) {
+                System.out.print(dl.get(i) + " ");
+            }
+            logger.debug("");
+            List list = dl.getData();
+            for(int i = 0; i < list.size(); i++) {
+                System.out.print(list.get(i) + " ");
+            }/**/
+            result = instance.getSurvived();
+            if(result == null) {
+                fail("result was null");
+            }
+            assertEquals(TRAIN_FILE_LENGTH, result.length);
+            assertEquals(0, result[0]);
+            assertEquals(1, result[1]);
+            assertEquals(1, result[2]);
+            assertEquals(1, result[3]);
+            assertEquals(0, result[4]);
+            assertEquals(0, result[5]);
+            
+            assertEquals(0, result[886]);
+            assertEquals(1, result[887]);
+        } catch(IOException e) {
+            fail(e.getClass() + " in testGetSurvived:  " + e.getMessage());
+        }
+        
     }
     
     @Test
