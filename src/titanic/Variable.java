@@ -3,6 +3,8 @@
  * and open the template in the editor.
  */
 package titanic;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  *
@@ -57,5 +59,36 @@ public enum Variable {
         }
     }
     
+    public List getAllowedValues() {
+        return Variable.getAllowedValues(this);
+    }
+    
+    /**
+     * gives a list of the values allowed by the input variable if it is categorical and an empty list for non categorical variables; for example, if the input is ISCHILD, returns a list with true and false; if the input is FARE, returns an empty list
+     * @param v
+     * @return a list with the allowed values
+     */
+    public static List getAllowedValues(Variable v) {
+        List list = new ArrayList();
+        if(v == Variable.SURVIVED) {
+            list.add(0);
+            list.add(1);
+        } else if(v == Variable.CLASS) {
+            list.add(1);
+            list.add(2);
+            list.add(3);
+        } else if(v == Variable.SEX) {
+            list.add("male");
+            list.add("female");
+        } else if(v == Variable.EMBARKED) {
+            list.add("S");
+            list.add("Q");
+            list.add("C");
+        } else if(v == Variable.ISCHILD) {
+            list.add(true);
+            list.add(false);
+        }
+        return list;
+    }
     
 }

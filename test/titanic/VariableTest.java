@@ -12,6 +12,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 import org.apache.log4j.*;
+import java.util.List;
 
 /**
  *
@@ -87,5 +88,65 @@ public class VariableTest {
         assertEquals(false, Variable.CABIN.isCategorical());
         assertEquals(true, Variable.EMBARKED.isCategorical());
         assertEquals(true, Variable.ISCHILD.isCategorical());
+    }
+    
+    @Test
+    public void testGetAllowedVariables() {
+        logger.info("\ntesting getAlloedVariables()");
+        List result = null;
+        
+        result = Variable.getAllowedValues(Variable.PASSENGERID);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.SURVIVED);
+        assertEquals(2, result.size());
+        assertEquals(0, result.get(0));
+        assertEquals(1, result.get(1));
+        
+        result = Variable.getAllowedValues(Variable.CLASS);
+        assertEquals(3, result.size());
+        assertEquals(1, result.get(0));
+        assertEquals(2, result.get(1));
+        assertEquals(3, result.get(2));
+        
+        result = Variable.getAllowedValues(Variable.SEX);
+        assertEquals(2, result.size());
+        assertEquals("male", result.get(0));
+        assertEquals("female", result.get(1));
+        
+        result = Variable.getAllowedValues(Variable.FIRST_NAME);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.LAST_NAME);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.SIBSP);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.PARCH);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.CABIN);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.FARE);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.TICKET);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.UNKNOWN);
+        assertEquals(0, result.size());
+        
+        result = Variable.getAllowedValues(Variable.EMBARKED);
+        assertEquals(3, result.size());
+        assertEquals("S", result.get(0));
+        assertEquals("Q", result.get(1));
+        assertEquals("C", result.get(2));
+        
+        result = Variable.getAllowedValues(Variable.ISCHILD);
+        assertEquals(2, result.size());
+        assertEquals(true, result.get(0));
+        assertEquals(false, result.get(1));
     }
 }
