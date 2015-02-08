@@ -149,4 +149,14 @@ public class VariableTest {
         assertEquals(true, result.get(0));
         assertEquals(false, result.get(1));
     }
+    
+    @Test
+    public void testGetTotalNumValues() {
+        logger.info("\ntesting getTotalNumValues(Variable[] variables)");
+        assertEquals(0, Variable.getTotalNumValues(null));
+        assertEquals(0, Variable.getTotalNumValues(new Variable[0]));
+        assertEquals(3, Variable.getTotalNumValues(new Variable[] { Variable.CLASS }));
+        assertEquals(0, Variable.getTotalNumValues(new Variable[] { Variable.FARE }));
+        assertEquals(10, Variable.getTotalNumValues(new Variable[] { Variable.CLASS, Variable.SEX, Variable.EMBARKED, Variable.ISCHILD }));
+    }
 }
