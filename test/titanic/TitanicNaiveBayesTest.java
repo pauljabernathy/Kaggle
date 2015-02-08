@@ -31,7 +31,7 @@ public class TitanicNaiveBayesTest {
     public static void setUpClass() {
         logger = Logger.getLogger(TitanicNaiveBayesTest.class);
         logger.addAppender(new ConsoleAppender(new PatternLayout(Constants.DEFAULT_LOGGING_PATTERN)));
-        logger.setLevel(Level.INFO);
+        logger.setLevel(Level.DEBUG);
     }
     
     @AfterClass
@@ -54,7 +54,7 @@ public class TitanicNaiveBayesTest {
     public void testRunTest() {
     }
 
-    @Test
+    //@Test
     public void testCheckForUnknowns() {
         logger.info("\ntesting checkForUnknowns()");
         TitanicNaiveBayes instance = new TitanicNaiveBayes();

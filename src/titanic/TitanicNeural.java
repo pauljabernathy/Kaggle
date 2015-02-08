@@ -34,13 +34,15 @@ public class TitanicNeural {
         TitanicNeural tn = new TitanicNeural();
         try {
             //tn.doTwoLayerAnalysis("titanic.csv");
-            tn.doThreeLayerAnalysis("titanic.csv");
+            tn.doThreeLayerAnalysis2("titanic.csv");
         } catch(IOException e) {
             System.out.println(e.getClass() + " " + e.getMessage());
         }
     }
     
     public TitanicNeural() {
+        System.out.println("calling TitanicNeural constructor()");
+        
         logger = ListArrayUtil.getLogger(this.getClass(), Level.INFO);
     }
     
@@ -82,7 +84,7 @@ public class TitanicNeural {
     public void doThreeLayerAnalysis(String filename) throws IOException {
         Variable[] variables = new Variable[] { Variable.SURVIVED, Variable.CLASS, Variable.SEX, Variable.AGE, Variable.SIBSP, Variable.PARCH, Variable.FARE, Variable.EMBARKED, Variable.ISCHILD };
         List<List<String>> rows = this.getRowsAsLists(filename, variables );
-        int[] survived = this.getSurvived();    //list of who survived, to compare against the results of each run
+        int[] survived = this.getSurvived();    //list of who survivedDouble, to compare against the results of each run
         logger.debug(rows.size() + " rows");
         int hiddenLayerSize = 20;
         DoubleGenome bestGenome = new DoubleGenome(300);
@@ -225,9 +227,9 @@ public class TitanicNeural {
                     logger.debug("output for network[" + j + "][] is " + sb);
                 }
                 sb = new StringBuilder("");
-                //if((int)(network[2][0].getCachedOutput()) == survived) {
+                //if((int)(network[2][0].getCachedOutput()) == survivedDouble) {
                 if((int)(network[network.length - 1][0].getCachedOutput()) == survived) {
-                //if((int)(network[3][0].getCachedOutput()) == survived) {
+                //if((int)(network[3][0].getCachedOutput()) == survivedDouble) {
                     logger.debug("was correct");
                     numCorrect++;
                     //record[i] = 1;
@@ -242,7 +244,7 @@ public class TitanicNeural {
         return record;
     }
     
-    //TODO: check length of weights
+    //TODO: check totalAllowedValues of weights
     public Neuron[][] getTwoLayerNetwork(DoubleGenome weights) {
         Neuron[][] network = new Neuron[3][];
         Neuron[][] inputs = this.getSensorsAndFirstLayer();
@@ -272,7 +274,7 @@ public class TitanicNeural {
     }
     
     public Neuron[][] getThreeLayerNetwork(DoubleGenome weights) {
-        return getThreeLayerNetwork1(weights);
+        return getThreeLayerNetwork(weights);
     }
     
     //This one seems to work worse than the two layer network and is worse than guessing all deaths and sometimes worse than random guessing.
@@ -517,6 +519,314 @@ public class TitanicNeural {
         return network;
     }
     
+    public void doThreeLayerAnalysis2(String filename) throws IOException {
+        Variable[] variables = new Variable[] { Variable.SURVIVED, Variable.CLASS, Variable.SEX, Variable.AGE, Variable.SIBSP, Variable.PARCH, Variable.FARE, Variable.EMBARKED, Variable.ISCHILD };
+        variables = new Variable[] { Variable.CLASS, Variable.SEX, Variable.EMBARKED, Variable.ISCHILD };
+        List<List<String>> rows = this.getRowsAsLists(filename, variables );
+        //variables = new Variable[] { Variable.CLASS, Variable.SEX, Variable.EMBARKED, Variable.ISCHILD, Variable.FARE };
+        int[] survivedInt = this.getSurvived();    //list of who survivedDouble, to compare against the results of each run
+        
+        logger.info("rows.size = " + rows.size());;
+        double[] survivedDouble = new double[survivedInt.length]; //use a double array so we can keep track of the raw output, not just the active/inactive part
+        for(int i = 0; i < survivedDouble.length; i++) {
+            survivedDouble[i] = (double)survivedInt[i];
+        }
+        int hiddenLayerSize = 5;
+        //DoubleGenome bestGenome = new DoubleGenome(rows.get(0).size() * hiddenLayerSize + hiddenLayerSize);
+        //bestGenome.generateRandom();
+        Neuron[][] network = this.getThreeLayerNetwork3(hiddenLayerSize, variables);
+        int requiredSize = (network[1].length + 1) * network[2].length;
+        DoubleGenome bestGenome = new DoubleGenome(requiredSize);
+        bestGenome.generateRandom();
+        
+        int numRuns = 4;
+        double[] results = new double[numRuns];
+        int[] record = this.doOneRun2(rows, this.getThreeLayerNetwork3(hiddenLayerSize, variables), variables, bestGenome);
+        int currentNumCorrect = survivedInt.length - ListArrayUtil.findNumDiffs(record, survivedInt);
+        int bestNumCorrect = currentNumCorrect;
+        logger.info("numCorrect = " + currentNumCorrect);
+        DoubleGenome copy = bestGenome.clone();
+        for(int i = 0; i < numRuns; i++) {
+            if(i % 1 == 0) {
+                logger.info(i);
+                logger.info("best num correct = " + bestNumCorrect + ", using " + ListArrayUtil.listToString(bestGenome.getRawData()));
+                logger.info("current num correct = " + currentNumCorrect + ", using " + ListArrayUtil.listToString(copy.getRawData()));
+            }
+            List<Double> mutated = bestGenome.mutate();
+            copy.setRawData(mutated);
+            //network = this.getThreeLayerNetwork2(copy);
+            record = this.doOneRun2(rows, this.getThreeLayerNetwork3(hiddenLayerSize, variables), variables, copy);
+            currentNumCorrect = survivedDouble.length - ListArrayUtil.findNumDiffs(record, survivedInt);
+            if(currentNumCorrect > bestNumCorrect) {
+                bestNumCorrect = currentNumCorrect;
+                bestGenome.setRawData(mutated);
+                copy = bestGenome.clone();
+            }
+        }
+        record = this.doOneRun2(rows, this.getThreeLayerNetwork3(hiddenLayerSize, variables), variables, bestGenome);
+        Histogram resultHist = new Histogram(record);
+        logger.info("best was " +  bestNumCorrect + " (" + (double)(bestNumCorrect * 100.0) / rows.size() + "%, " + (double)bestNumCorrect * 100.0/(double)(resultHist.getCountOf(0) + resultHist.getCountOf(1)) + "% of processable) correct with " + ListArrayUtil.listToString(bestGenome.getRawData()));
+        showRecord(rows, record);
+    }
+    
+    /**
+     * This method builds a network, using the given variables as inputs and having a hidden layer of the given size and an output of one neuron.  If variables is empty or null, the sensor layer and first layer will be of 0 size but the hidden layer will still be the given hidden layer size and there will be one output neuron.
+     * There is one layer for sensors, one for each variable and having one connection to the corresponding neuron in the first layer.  This allows us to give an input to the first layer neurongs by manually setting the output of the corresponding sensor neuron.
+     * Each first layer neuron has one connection to each hidden layer neuron.  Each hidden layer neuron has one connection to the output neuron.  If there are m variables and a hidden layer of size n, there are (m + 1) * n connections.
+     * @param hiddenLayerSize
+     * @param variables
+     * @return 
+     */
+    public Neuron[][] getThreeLayerNetwork3(int hiddenLayerSize, Variable[] variables) {
+        
+        Neuron[][] network = new Neuron[4][];
+        Neuron[][] inputs = this.getSensorsAndFirstLayer(variables);
+        network[0] = inputs[0];
+        network[1] = inputs[1];
+        network[2] = new Neuron[hiddenLayerSize];
+        network[3] = new Neuron[1];
+        
+        int numConnections = network[1].length * hiddenLayerSize + hiddenLayerSize;
+        DoubleGenome weights = new DoubleGenome(numConnections);
+        
+        for(int j = 0; j < hiddenLayerSize; j++) {
+            network[2][j] = new Neuron();
+        }
+        for(int i = 0; i < inputs[1].length; i++) {
+            for(int j = 0; j < hiddenLayerSize; j++) {
+                //weights.get(i * (hiddenLayerSize) + j);
+                network[2][j].addInput(network[1][i], weights.get(i * (hiddenLayerSize) + j));
+            }
+        }
+        
+        Neuron output = new Neuron();
+        int start = inputs[1].length * hiddenLayerSize;
+        for(int j = 0; j < hiddenLayerSize; j++) {
+            output.addInput(network[2][j], weights.get(start + j));
+        }
+        network[3][0] = output;
+        return network;
+    }
+  
+    public Neuron[][] getSensorsAndFirstLayer(Variable[] variables) {
+        if(variables == null) {
+            return new Neuron[2][0];
+        }
+        //for each variable
+        //if it is categorical, get the list of possible values, and have one for each one
+        //also have a neuron for unknown/missing/unparseable
+        int numNeurons = 0;
+        for(int i = 0; i < variables.length; i++) {
+            if(variables[i].isCategorical()) {
+                numNeurons += variables[i].getAllowedValues().size() + 1;
+            } else {
+                numNeurons += 2;
+            }
+        }
+        Neuron[][] network = new Neuron[2][];
+        network[0] = new Neuron[numNeurons];
+        network[1] = new Neuron[numNeurons];
+        for(int i = 0; i < numNeurons; i++) {
+            network[0][i] = new Neuron();
+            network[1][i] = new Neuron();
+            network[1][i].addInput(network[0][i], 1.0);
+        }
+        return network;
+    }
+    
+    protected int[] doOneRun2(List<List<String>> rows, Neuron[][] network, Variable[] variables, DoubleGenome genome) {
+        //determine how many values there are for each variable, and what types?  maybe an array of Lists
+        //for each row
+        //read all values from current row, match to allowed value
+        double[] rawResult = new double[rows.size()];
+        int[] result = new int[rows.size()];
+        double[] inputActivation = null;
+        for(int i = 0; i < rows.size(); i++) {
+            inputActivation = getInputActivationForRow(rows.get(i), variables);
+            for(int j = 0; j < inputActivation.length; j++) {
+                network[0][j].setOutput(inputActivation[j]);
+            }
+            logger.info(i + " " + ListArrayUtil.arrayToString(inputActivation));
+            logger.info(i + " " + ListArrayUtil.listToString(genome.getRawData()));
+            //rawResult[i] = this.recalculateNetworkOutput(network)[network.length - 1][0].calculateOutput();
+            network = this.updateNetwork(network, genome);
+            rawResult[i] = network[network.length - 1][0].getCachedOutput();
+            if(rawResult[i] == Neuron.ACTIVE) {
+                result[i] = 1;
+            } else {
+                result[i] = 0;
+            }
+            logger.info(i + " " + rawResult[i] + " " + result[i]);
+            
+        }
+        //System.out.println(ListArrayUtil.arrayToString(result));
+        return result;
+    }
+    
+    /**
+     * Computes the activation for the input neurons for the given set of values and Variables.  The values in the input List must correspond exactly to the given Variables.
+     * For example, if your Variable array is { Variable.CLASS, Variable.EMBARKED, and Variable.ISCHILD }, the List much contain at least three items, whose values match the
+     * values the corresponding variables can take ( something like { "2", "C", "true" };
+     * The array returned will generally be larger than the length of the inputs because the categorical variables result is one number per possible value.
+     * So { "2", "C", "true" } would result in { 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0 }.  The first four correspond to class (1, 2, 3, unknown), the next four to embarked (S, Q, C, unknown), and the last three to child (true, false, unknown).
+     * @param row
+     * @param variables
+     * @return 
+     */
+    protected double[] getInputActivationForRow(List<String> row, Variable[] variables) {
+        if(row == null || variables == null || row.isEmpty() || variables.length == 0) {
+            return new double[0];
+        } else if(row.size() != variables.length) {
+            return new double[0];
+        }
+        int totalAllowedValues = 0;
+        for(int i = 0; i < variables.length; i++) {
+            totalAllowedValues += variables[i].getAllowedValues().size() + 1;
+        }
+        double[] result = new double[totalAllowedValues];
+        double[] current = null;
+        int resultIndex = 0;
+        for(int i = 0; i < row.size(); i++) {
+            current = getInputActivationForVariable(variables[i], row.get(i));
+            for(int j = 0; j < current.length; j++) {
+                result[resultIndex] = current[j];
+                resultIndex++;
+            }
+        }
+        return result;
+    }
+    
+    //TODO:  should we clean input for spaces, caps, etc?
+    //TODO:  deal with non categorical variables
+    /**
+     * Determines the input activation for a single variable.  For categorical variables, the length of the returned data is equal to the number of possible values the variable can take, plus one for unknown.
+     * @param variable
+     * @param input
+     * @return 
+     */
+    protected double[] getInputActivationForVariable(Variable variable, String input) {
+        List values = variable.getAllowedValues();
+        double[] result = new double[values.size() + 1];
+        if(variable == Variable.CLASS) {
+            try {
+                int value = Integer.parseInt(input);
+                int index = values.indexOf(value);
+                if(index == -1) {
+                    return new double[] { 0.0, 0.0, 0.0, 1.0 };
+                }
+                for(int i = 0; i < values.size(); i++) {
+                    if(i != index) {
+                        result[i] = 0.0;
+                    } else {
+                        result[i] = 1.0;
+                    }
+                }
+            } catch(NumberFormatException e) {
+                //not a proper number => count as unknown
+                return new double[] { 0.0, 0.0, 0.0, 1.0 };
+            }
+        } else if(variable == Variable.SEX || variable == Variable.EMBARKED) {
+            int index = values.indexOf(input);
+            /*if(index == -1) {
+                return new double[] { 0.0, 0.0, 1.0 };
+            }*/
+            for(int i = 0; i < values.size(); i++) {
+                if(i != index) {
+                    result[i] = 0.0;
+                } else {
+                    result[i] = 1.0;
+                }
+            }
+            if(index == -1) {
+                result[result.length - 1] = 1.0;
+            }
+        } else if(variable == Variable.ISCHILD) {
+            if(input == null) {
+                return new double[] { 0.0, 0.0, 1.0 };
+            }
+            String value = input.toLowerCase();
+            if("true".equals(value)) {
+                return new double[] { 1.0, 0.0, 0.0 };
+            } else if("false".equals(value)) {
+                return new double[] { 0.0, 1.0, 0.0 };
+            } else {
+                return new double[] { 0.0, 0.0, 1.0 };
+            }
+        }
+        return result;
+    }
+    
+    public Neuron[][] updateNetwork(Neuron[][] network, DoubleGenome genome) {
+        return this.recalculateNetworkOutput(this.updateNetworkWeights(network, genome));
+    }
+    
+    //TODO:  generalize for non three layer
+    public Neuron[][] updateNetworkWeights(Neuron[][] network, DoubleGenome genome) {
+        //System.out.println("updateNetworkWeights(network, " + ListArrayUtil.listToString(genome.getRawData()) + ")");
+        if(network == null) {
+            return new Neuron[0][];
+        }
+        //int requiredSize1 = Variable.getTotalNumValues(;
+        if((network[1].length + 1) * network[2].length > genome.getSize()) {
+            int size = (network[1].length + 1) * network[2].length;
+            
+            System.out.println("genome too small, was " + genome.getSize() + ", needed " + size + ", returning");
+            System.out.println(network[0].length + " " + ListArrayUtil.arrayToString(network[0]));
+            System.out.println(network[1].length + " " + ListArrayUtil.arrayToString(network[1]));
+            System.out.println(network[2].length + " " + ListArrayUtil.arrayToString(network[2]));
+            System.out.println(network[3].length + " " + ListArrayUtil.arrayToString(network[3]));
+            return network;
+        }
+        int genomeIndex = 0;
+        /**for(int i = 0; i < network[1].length; i++) {
+            for(int j = 0; j < network[2].length; j++) {
+                network[2][j].clear();
+                network[2][j].addInput(network[1][i], genome.get(genomeIndex));
+                genomeIndex++;
+            }
+        }/**/
+        for(int j = 0; j < network[2].length; j++) {
+            network[2][j].clear();
+            for(int i = 0; i < network[1].length; i++) {
+                network[2][j].addInput(network[1][i], genome.get(genomeIndex));
+                genomeIndex++;
+            }
+        }
+        
+        network[3][0].clear();
+        for(int j = 0; j < network[2].length; j++) {
+            //network[3][0].clear();
+            network[3][0].addInput(network[2][j], genome.get(genomeIndex));
+            genomeIndex++;
+        }
+        return network;
+    }
+    //TODO:  get this method working
+    public Neuron[][] recalculateNetworkOutput(Neuron[][] network) {
+        if(network == null) {
+            return new Neuron[4][];
+        }
+        for(int i = 1; i < network.length; i++) {
+            if(network[i] == null) {
+                continue;
+            }
+            for(int j = 0; j < network[i].length; j++) {
+                //System.out.println("before network[" + i + "][" + j + "].calculateOutput():  " + network[i][j].getCachedOutput());System.out.flush();
+                //network[i][j].setOutput(network[i][j].calculateOutput());       //the problem seems to be with this line
+                List<Neuron> inputs = network[i][j].getInputs();
+                List<Double> outputs = new ArrayList<Double>();
+                for(Neuron n : inputs) {
+                    outputs.add(n.getCachedOutput());
+                }
+                //System.out.println(ListArrayUtil.listToString(outputs));
+                //System.out.println(ListArrayUtil.listToString(network[i][j].getWeights()));
+                network[i][j].calculateOutput();
+                //System.out.println("after network[" + i + "][" + j + "].calculateOutput():  " + network[i][j].getCachedOutput());System.out.flush();
+            }
+        }
+        return network;
+    }
+    
     public Neuron[][] resetNetwork(Neuron[][] network) {
         if(network == null) {
             return new Neuron[0][0];
@@ -560,7 +870,7 @@ public class TitanicNeural {
                 port = row.get(7);
                 isChild = Boolean.parseBoolean(row.get(8));
                 correct = (record[i] == survived)?"true":"false";
-                //logger.debug(record[i] + sep + survived + sep + pclass + sep + sep + sep + sex + sep + sep + age + sep + sibsp + sep + parch + sep + fare + sep + port + sep + sep + sep + isChild);
+                //logger.debug(record[i] + sep + survivedDouble + sep + pclass + sep + sep + sep + sex + sep + sep + age + sep + sibsp + sep + parch + sep + fare + sep + port + sep + sep + sep + isChild);
                 logger.debug(i+1 + sep + survived + sep + record[i] + sep + correct + sep + pclass + sep + sex + sep + age + sep + sibsp + sep + parch + sep + fare + sep + port + sep + isChild);
             } catch(NumberFormatException e) {
                 //for now, just go on the the next row I guess

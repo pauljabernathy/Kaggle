@@ -46,6 +46,7 @@ public class Result {
     }
     
     public String toString() {
-        return Utilities.arrayToString(this.indeces) + " " + this.score;
+        //return Utilities.arrayToString(this.indeces) + " " + this.score;
+        return Variable.getEnumNames(this.indeces) + " " + this.score;
     }
 }

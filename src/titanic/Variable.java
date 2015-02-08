@@ -91,4 +91,15 @@ public enum Variable {
         return list;
     }
     
+    public static int getTotalNumValues(Variable[] variables) {
+        if(variables == null || variables.length == 0) {
+            return 0;
+        }
+        int count = 0;
+        for(int i = 0; i < variables.length; i++) {
+            count += Variable.getAllowedValues(variables[i]).size();
+        }
+        return count;
+    }
+    
 }

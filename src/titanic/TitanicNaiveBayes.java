@@ -42,13 +42,29 @@ public class TitanicNaiveBayes implements TitanicStrategy {
     
     public static void main(String[] args) {
         TitanicNaiveBayes titanic = new TitanicNaiveBayes();
+        System.out.println(Variable.CLASS);
+        System.out.println(Variable.SEX);
+        System.out.println(Variable.SIBSP);
+        System.out.println(Variable.PARCH);
+        System.out.println(Variable.ISCHILD);
+        Variable a = Variable.CLASS;
+        Variable b = Variable.getInstance(2);
+        System.out.println(a.intValue());
+        System.out.println(b);
         titanic.runTrain("data/titanic.csv", "train_results.csv");
         //titanic.runTest("data/titanic_test.csv", "test_results_20140125.csv", new int[]{ 5, 7, 8, 12, 13 }, Constants.TRAINING_FILE, new int[]{ 5, 7, 8, 12, 13 });
         //titanic.runTest("titanic_test.csv", "test_results_20131110_2.csv", new int[]{ 5, 7, 8, 13 });
         //titanic.runTest("titanic_test.csv", "test_results_20131110_3.csv", new int[]{ 2, 5, 7 });
         //titanic.runTest("titanic_test.csv", "test_results_20131110_4.csv", new int[]{ 2, 5, 7, 8, 12 });
         //titanic.runTest("titanic_test.csv", "test_results_20131110_5.csv", new int[]{ 2, 5, 7, 8 });
-        
+        //titanic.runTest("data/titanic_test.csv", "test_result_5_7_8.csv", new int[]{ 5, 7, 8 }, "data/titanic.csv");
+        //titanic.runTest("data/titanic_test.csv", "test_results_{ 5, 7, 8 }.csv", new int[]{ 5, 7, 8 }, "data/titanic.csv");
+        /*titanic.runTest("titanic_test.csv", "test_results_20131110_5.csv", new int[]{ 5, 7, 8, 12 }, "data/titanic.csv");
+        titanic.runTest("titanic_test.csv", "test_results_20131110_5.csv", new int[]{ 5, 7, 12, 13 }, "data/titanic.csv");
+        titanic.runTest("titanic_test.csv", "test_results_20131110_5.csv", new int[]{ 5, 7, 12 }, "data/titanic.csv");
+        titanic.runTest("titanic_test.csv", "test_results_20131110_5.csv", new int[]{ 5, 7 }, "data/titanic.csv");
+        */
+        //titanic.runTest("data/titanic.csv", "data/test_results.csv");
     }
     
     public TitanicNaiveBayes() {
@@ -70,8 +86,13 @@ public class TitanicNaiveBayes implements TitanicStrategy {
 
         Collections.sort(results, new ResultComparator());
         //for(Result result : results) {
+        String testFilename = "";
         for(int i = results.size() - 1; i >= 0; i--) {
             logger.debug(results.get(i));
+            //logger.debug(Variable.getEnumNames(results.get(i).getIndeces()) + results.get(i));
+            testFilename = "test_results/test_results_" + i + "_" + Utilities.arrayToString(results.get(i).getIndeces()) + ".csv";
+            //logger.debug(testFilename);
+            //runTest("data/titanic_test.csv", testFilename, results.get(i).getIndeces(), "titanic.csv");
         }
     }
     
@@ -102,7 +123,28 @@ public class TitanicNaiveBayes implements TitanicStrategy {
     }
     
     public void runTest(String inputFile, String outputFile) {
-        runTest(inputFile, outputFile, TEST_INDECES, Constants.TRAINING_FILE, TEST_INDECES);
+        //runTest(inputFile, outputFile, TEST_INDECES, Constants.TRAINING_FILE, TEST_INDECES);
+        List<int[]> permutations = Utilities.getCondensedPermutations(TRAIN_INDECES);
+        List<Result> results = new ArrayList<Result>();
+        //for(int[] a : permutations) {
+        String filename = "";
+        for(int i = 0; i < permutations.size(); i++) {
+            int[] a = permutations.get(i);
+            Utilities.showArray(a);
+            filename = "test_results_" + Utilities.arrayToString(a) + ".csv";
+            logger.debug(filename);
+            //results.add(doOneTrainingRun(inputFile, outputFile, a));
+        }
+
+        Collections.sort(results, new ResultComparator());
+        //for(Result result : results) {
+        for(int i = results.size() - 1; i >= 0; i--) {
+            logger.debug(results.get(i));
+        }
+    }
+    
+    public  void runTest(String inputFile, String outputFile, int[] indeces, String referenceFile) {
+        runTest(inputFile, outputFile, indeces, referenceFile, indeces);
     }
     
     public void runTest(String inputFile, String outputFile, int[] indeces, String referenceFile, int[] referenceIndeces) {
