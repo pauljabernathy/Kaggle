@@ -92,7 +92,7 @@ public class TitanicNaiveBayes implements TitanicStrategy {
             //logger.debug(Variable.getEnumNames(results.get(i).getIndeces()) + results.get(i));
             testFilename = "test_results/test_results_" + i + "_" + Utilities.arrayToString(results.get(i).getIndeces()) + ".csv";
             //logger.debug(testFilename);
-            //runTest("data/titanic_test.csv", testFilename, results.get(i).getIndeces(), "titanic.csv");
+            runTest("data/titanic_test.csv", testFilename, results.get(i).getIndeces(), "titanic.csv");
         }
     }
     
@@ -133,7 +133,7 @@ public class TitanicNaiveBayes implements TitanicStrategy {
             Utilities.showArray(a);
             filename = "test_results_" + Utilities.arrayToString(a) + ".csv";
             logger.debug(filename);
-            //results.add(doOneTrainingRun(inputFile, outputFile, a));
+            results.add(doOneTrainingRun(inputFile, outputFile, a));
         }
 
         Collections.sort(results, new ResultComparator());

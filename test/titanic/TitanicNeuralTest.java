@@ -192,7 +192,7 @@ public class TitanicNeuralTest {
     //@Test
     public void testGetTwoLayerNetwork() {
         logger.info("\ntesting getTwoLayerNetwork");
-        Neuron[][] network = instance.getTwoLayerNetwork(new DoubleGenome(14));
+        Neuron[][] network = instance.getTwoLayerNetwork(new DoubleGenome(14, instance.getMutationProbabilities()));
         assertEquals(3, network.length);
         assertEquals(14, network[0].length);
         for(Neuron n : network[0]) {
@@ -224,7 +224,7 @@ public class TitanicNeuralTest {
     //@Test
     public void testGetThreeLayerNetwork2() {
         logger.info("\ntesting getThreeLayerNetwork2()");
-        DoubleGenome genome = new DoubleGenome(225);
+        DoubleGenome genome = new DoubleGenome(225, instance.getMutationProbabilities());
         genome.generateRandom();
         int hiddenLayerSize = 15;
         Neuron[][] network = instance.getThreeLayerNetwork2(genome, hiddenLayerSize);
@@ -373,7 +373,7 @@ public class TitanicNeuralTest {
         //instance.getSensorsAndFirstLayer(variables);
         //this.testGetSensorsAndFirstLayer_Variable_array();
         network = instance.getThreeLayerNetwork3(2, variables);
-        genome = new DoubleGenome(8);
+        genome = new DoubleGenome(8, instance.getMutationProbabilities());
         genome.setRawData(new double[] { 0.0, .9, .9, .0, .0, .0, .9, 0.0 });
         genome.setRawData(new double[] { 0.0, .9, .0, .9, .0, .0, .9, 0.0 });
         
@@ -466,7 +466,7 @@ public class TitanicNeuralTest {
     //@Test
     public void testUpdateNetwork() {
         logger.info("\ntesting updateNetwork()");
-        DoubleGenome genome = new DoubleGenome(20);
+        DoubleGenome genome = new DoubleGenome(20, instance.getMutationProbabilities());
         Neuron[][] network = null;
         network = instance.updateNetworkWeights(network, genome);
         assertEquals(0, network.length);
@@ -537,7 +537,7 @@ public class TitanicNeuralTest {
     //@Test
     public void testUpdateNetworkWeights() {
         logger.info("\ntesting updateNetworkWeights()");
-        DoubleGenome genome = new DoubleGenome(20);
+        DoubleGenome genome = new DoubleGenome(20, instance.getMutationProbabilities());
         Neuron[][] network = null;
         network = instance.updateNetworkWeights(network, genome);
         assertEquals(0, network.length);
@@ -641,7 +641,7 @@ public class TitanicNeuralTest {
         System.out.println(network[2].length + " " + ListArrayUtil.arrayToString(network[2]));
         System.out.println(network[3].length + " " + ListArrayUtil.arrayToString(network[3]));
         int requiredSize = (network[1].length + 1) * network[2].length;
-        DoubleGenome genome = new DoubleGenome(requiredSize);//variables.length * hiddenLayerSize + hiddenLayerSize);
+        DoubleGenome genome = new DoubleGenome(requiredSize, instance.getMutationProbabilities());//variables.length * hiddenLayerSize + hiddenLayerSize);
         for(int i = 0; i < genome.getSize(); i++) {
             genome.set(i, 1.0);
         }

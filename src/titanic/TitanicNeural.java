@@ -13,8 +13,9 @@ import java.util.Arrays;
 
 import org.apache.log4j.*;
 import toolbox.util.*;
-import toolbox.stats.Histogram;
+import toolbox.stats.*;
 import learning.neural.Neuron;
+import learning.genetic.*;
 
 /**
  *
@@ -34,7 +35,7 @@ public class TitanicNeural {
         TitanicNeural tn = new TitanicNeural();
         try {
             //tn.doTwoLayerAnalysis("titanic.csv");
-            tn.doThreeLayerAnalysis2("titanic.csv");
+            tn.doThreeLayerAnalysis2("titanic.csv", 1000, new Variable[] { Variable.SEX });
         } catch(IOException e) {
             System.out.println(e.getClass() + " " + e.getMessage());
         }
@@ -46,10 +47,21 @@ public class TitanicNeural {
         logger = ListArrayUtil.getLogger(this.getClass(), Level.INFO);
     }
     
+    public ProbDist<MutationType> getMutationProbabilities() {
+        ProbDist<MutationType> mutationProbs = new ProbDist<MutationType>();
+        mutationProbs.add(MutationType.POINT_VALUE_CHANGE, .25);
+        mutationProbs.add(MutationType.MULTIPLE_POINT_VALUE_CHANGE, .35);
+        mutationProbs.add(MutationType.POINT_DELETION, 0.0);   //let's not deal with changing the length just yet...
+        mutationProbs.add(MutationType.SWAP, .2);
+        mutationProbs.add(MutationType.GROUP_REVERSAL, .2);
+        
+        return mutationProbs;
+    }
+    
     public void doTwoLayerAnalysis(String filename) throws IOException {
         //List<List<String>> columns = CSVReader.getColumns(filename, new int[] { 0, 1, 2, 5, 7, 8, 12, 13 }, ",");
         List<List<String>> rows = CSVReader.getRowsAsLists(filename, new int[] { 1, 2, 5, 6, 7, 8, 10, 12, 13 }, 900);
-        DoubleGenome bestGenome = new DoubleGenome(14);
+        DoubleGenome bestGenome = new DoubleGenome(14, getMutationProbabilities());
         bestGenome.generateRandom();
         logger.debug(bestGenome.getRawData());
         //DoubleGenome previous = bestGenome.clone();
@@ -87,7 +99,7 @@ public class TitanicNeural {
         int[] survived = this.getSurvived();    //list of who survivedDouble, to compare against the results of each run
         logger.debug(rows.size() + " rows");
         int hiddenLayerSize = 20;
-        DoubleGenome bestGenome = new DoubleGenome(300);
+        DoubleGenome bestGenome = new DoubleGenome(300, this.getMutationProbabilities());
         bestGenome.generateRandom();
         Neuron[][] network = this.getThreeLayerNetwork2(bestGenome, hiddenLayerSize);
         
@@ -274,7 +286,7 @@ public class TitanicNeural {
     }
     
     public Neuron[][] getThreeLayerNetwork(DoubleGenome weights) {
-        return getThreeLayerNetwork(weights);
+        return getThreeLayerNetwork1(weights);
     }
     
     //This one seems to work worse than the two layer network and is worse than guessing all deaths and sometimes worse than random guessing.
@@ -519,9 +531,14 @@ public class TitanicNeural {
         return network;
     }
     
-    public void doThreeLayerAnalysis2(String filename) throws IOException {
-        Variable[] variables = new Variable[] { Variable.SURVIVED, Variable.CLASS, Variable.SEX, Variable.AGE, Variable.SIBSP, Variable.PARCH, Variable.FARE, Variable.EMBARKED, Variable.ISCHILD };
+    public void doThreeLayerAnalysis2(String filename, int numRuns, Variable[] variables) throws IOException {
+        doThreeLayerAnalysis2(filename, numRuns, variables.length + 1, variables);
+    }
+    
+    public void doThreeLayerAnalysis2(String filename, int numRuns, int hiddenLayerSize, Variable[] variables) throws IOException {
+        variables = new Variable[] { Variable.SURVIVED, Variable.CLASS, Variable.SEX, Variable.AGE, Variable.SIBSP, Variable.PARCH, Variable.FARE, Variable.EMBARKED, Variable.ISCHILD };
         variables = new Variable[] { Variable.CLASS, Variable.SEX, Variable.EMBARKED, Variable.ISCHILD };
+        variables = new Variable[] { Variable.CLASS };
         List<List<String>> rows = this.getRowsAsLists(filename, variables );
         //variables = new Variable[] { Variable.CLASS, Variable.SEX, Variable.EMBARKED, Variable.ISCHILD, Variable.FARE };
         int[] survivedInt = this.getSurvived();    //list of who survivedDouble, to compare against the results of each run
@@ -531,18 +548,14 @@ public class TitanicNeural {
         for(int i = 0; i < survivedDouble.length; i++) {
             survivedDouble[i] = (double)survivedInt[i];
         }
-        int hiddenLayerSize = 5;
-        //DoubleGenome bestGenome = new DoubleGenome(rows.get(0).size() * hiddenLayerSize + hiddenLayerSize);
-        //bestGenome.generateRandom();
         Neuron[][] network = this.getThreeLayerNetwork3(hiddenLayerSize, variables);
         int requiredSize = (network[1].length + 1) * network[2].length;
-        DoubleGenome bestGenome = new DoubleGenome(requiredSize);
+        DoubleGenome bestGenome = new DoubleGenome(requiredSize, this.getMutationProbabilities());
         bestGenome.generateRandom();
         
-        int numRuns = 4;
         double[] results = new double[numRuns];
-        int[] record = this.doOneRun2(rows, this.getThreeLayerNetwork3(hiddenLayerSize, variables), variables, bestGenome);
-        int currentNumCorrect = survivedInt.length - ListArrayUtil.findNumDiffs(record, survivedInt);
+        int[] record = null;//this.doOneRun2(rows, this.getThreeLayerNetwork3(hiddenLayerSize, variables), variables, bestGenome);
+        int currentNumCorrect = 0;//survivedInt.length - ListArrayUtil.findNumDiffs(record, survivedInt);
         int bestNumCorrect = currentNumCorrect;
         logger.info("numCorrect = " + currentNumCorrect);
         DoubleGenome copy = bestGenome.clone();
@@ -555,7 +568,7 @@ public class TitanicNeural {
             List<Double> mutated = bestGenome.mutate();
             copy.setRawData(mutated);
             //network = this.getThreeLayerNetwork2(copy);
-            record = this.doOneRun2(rows, this.getThreeLayerNetwork3(hiddenLayerSize, variables), variables, copy);
+            record = this.doOneRun2(rows, network, variables, copy);
             currentNumCorrect = survivedDouble.length - ListArrayUtil.findNumDiffs(record, survivedInt);
             if(currentNumCorrect > bestNumCorrect) {
                 bestNumCorrect = currentNumCorrect;
@@ -563,10 +576,10 @@ public class TitanicNeural {
                 copy = bestGenome.clone();
             }
         }
-        record = this.doOneRun2(rows, this.getThreeLayerNetwork3(hiddenLayerSize, variables), variables, bestGenome);
+        record = this.doOneRun2(rows, network, variables, bestGenome);
         Histogram resultHist = new Histogram(record);
         logger.info("best was " +  bestNumCorrect + " (" + (double)(bestNumCorrect * 100.0) / rows.size() + "%, " + (double)bestNumCorrect * 100.0/(double)(resultHist.getCountOf(0) + resultHist.getCountOf(1)) + "% of processable) correct with " + ListArrayUtil.listToString(bestGenome.getRawData()));
-        showRecord(rows, record);
+        //showRecord(rows, record);
     }
     
     /**
@@ -587,7 +600,7 @@ public class TitanicNeural {
         network[3] = new Neuron[1];
         
         int numConnections = network[1].length * hiddenLayerSize + hiddenLayerSize;
-        DoubleGenome weights = new DoubleGenome(numConnections);
+        DoubleGenome weights = new DoubleGenome(numConnections, this.getMutationProbabilities());
         
         for(int j = 0; j < hiddenLayerSize; j++) {
             network[2][j] = new Neuron();
@@ -646,8 +659,8 @@ public class TitanicNeural {
             for(int j = 0; j < inputActivation.length; j++) {
                 network[0][j].setOutput(inputActivation[j]);
             }
-            logger.info(i + " " + ListArrayUtil.arrayToString(inputActivation));
-            logger.info(i + " " + ListArrayUtil.listToString(genome.getRawData()));
+            logger.debug(i + " " + ListArrayUtil.arrayToString(inputActivation));
+            logger.debug(i + " " + ListArrayUtil.listToString(genome.getRawData()));
             //rawResult[i] = this.recalculateNetworkOutput(network)[network.length - 1][0].calculateOutput();
             network = this.updateNetwork(network, genome);
             rawResult[i] = network[network.length - 1][0].getCachedOutput();
@@ -656,7 +669,7 @@ public class TitanicNeural {
             } else {
                 result[i] = 0;
             }
-            logger.info(i + " " + rawResult[i] + " " + result[i]);
+            logger.debug(i + " " + rawResult[i] + " " + result[i]);
             
         }
         //System.out.println(ListArrayUtil.arrayToString(result));
@@ -697,6 +710,7 @@ public class TitanicNeural {
     }
     
     //TODO:  should we clean input for spaces, caps, etc?
+    //TODO:  remove for loops, replace with result[index] = 1.0;
     //TODO:  deal with non categorical variables
     /**
      * Determines the input activation for a single variable.  For categorical variables, the length of the returned data is equal to the number of possible values the variable can take, plus one for unknown.
@@ -844,40 +858,71 @@ public class TitanicNeural {
         logger.setLevel(Level.DEBUG);
         
         int passengerId;
-        int survived;
-        int pclass;
-        String sex;
-        int age;
-        int sibsp;
-        int parch;
-        double fare;
-        String port;
-        boolean isChild;
+        int survived = -1;
+        int pclass = -1;
+        String sex = "unknown";
+        int age = -1;
+        int sibsp = -1;
+        int parch = -1;
+        double fare = -1.0;
+        String port = "unknown";
+        boolean isChild = false;
         String sep = COLUMN_SEPARATOR;
         List<String> row = null;
         String correct;
         logger.debug("passengerid" + sep + "survived" + sep + "guess" + sep + "correct" + sep + "pclass" + sep + "sex" + sep + "age" + sep + "sibsp" + sep + "parch" + sep + "fare" + sep + "port" + sep + "isChild");
         for(int i = 0; i < rows.size(); i++) {
             row = rows.get(i);
+            logger.debug(row);
+            //logger.debug(ListArrayUtil.arrayToString(record));
             try {
                 survived = Integer.parseInt(row.get(0));
+            } catch(Exception e) {
+                //use default
+            }
+            try {
                 pclass = Integer.parseInt(row.get(1));
+            } catch(Exception e) {
+                //use default
+            }
+            try {
                 sex = row.get(2);
+            } catch(Exception e) {
+                //use default
+            }
+            /*try {
                 age = Integer.parseInt(row.get(3));
+            } catch(NumberFormatException e) {
+            }
+            try {
                 sibsp = Integer.parseInt(row.get(4));
+            } catch(Exception e) {
+            }
+            try {
                 parch = Integer.parseInt(row.get(5));
+            } catch(Exception e) {
+            }
+            try {
                 fare = Double.parseDouble(row.get(6));
+            } catch(Exception e) {
+            }
+            try {
                 port = row.get(7);
-                isChild = Boolean.parseBoolean(row.get(8));
+            } catch(Exception e) {
+            }*/
+            try {
+                isChild = Boolean.parseBoolean(row.get(3));
+            } catch(Exception e) {
+                //use default
+            }
                 correct = (record[i] == survived)?"true":"false";
                 //logger.debug(record[i] + sep + survivedDouble + sep + pclass + sep + sep + sep + sex + sep + sep + age + sep + sibsp + sep + parch + sep + fare + sep + port + sep + sep + sep + isChild);
                 logger.debug(i+1 + sep + survived + sep + record[i] + sep + correct + sep + pclass + sep + sex + sep + age + sep + sibsp + sep + parch + sep + fare + sep + port + sep + isChild);
-            } catch(NumberFormatException e) {
                 //for now, just go on the the next row I guess
                 //TODO:  handle
                 //logger.error(e.getClass() + " at " + i + ":  " + e.getMessage());
                 logger.debug(i+1 + sep+ "unknown" + sep + record[i] + sep + "unknown" + sep + ListArrayUtil.listToString(row, COLUMN_SEPARATOR, "", ""));
-            }
+            //}
         }
     }
 }
